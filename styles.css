@@ -1,0 +1,13 @@
+/* CSS Styles */
+body {
+    font-family: Arial, sans-serif;
+}
+
+header {
+    background-color: #f0f0f0;
+    padding: 10px;
+}
+
+h1 {
+    color: #333;
+}
