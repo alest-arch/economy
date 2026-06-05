@@ -1,0 +1,4 @@
+# Large, re-derivable intraday bars. Regenerate from the raw OANDA minute data:
+#   python3 src/build_data.py   (after cloning FutureSharks/financial-data into /tmp/fsdata)
+*_M5.csv
+*_M15.csv

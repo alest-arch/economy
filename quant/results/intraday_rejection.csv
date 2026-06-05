@@ -1,0 +1,9 @@
+instrument,config,trades,gross_E[R],gross_PF,net_E[R],net_PF,net_maxDD_%
+SPX,ORB or60 rr2 L+S,4358,0.0104,1.033,-0.117,0.701,-99.5
+SPX,ORB or60 rr2 long+trend,2235,0.0245,1.086,-0.1058,0.705,-91.3
+SPX,ORB or30 rr1 L+S,6799,0.0008,1.002,-0.1538,0.648,-100.0
+SPX,IntradayMom 1h,3889,0.112,1.175,-0.2712,0.693,-100.0
+NQ,ORB or60 rr2 L+S,4123,-0.0076,0.974,-0.2312,0.476,-100.0
+NQ,ORB or60 rr2 long+trend,2166,-0.0032,0.988,-0.2303,0.448,-99.4
+NQ,ORB or30 rr1 L+S,6269,-0.0003,0.999,-0.2732,0.458,-100.0
+NQ,IntradayMom 1h,3921,0.0588,1.091,-0.6137,0.442,-100.0
