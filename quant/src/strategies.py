@@ -129,7 +129,9 @@ def build_signals_swing_mtf(df_exec: pd.DataFrame, df_daily: pd.DataFrame,
                             exit_th: float = 65.0, stop_atr: float = 2.5, atr_n: int = 14,
                             max_hold_bars: int = 30, session: str = "us",
                             vix: pd.Series | None = None, vix_max: float | None = None,
-                            rr: float | None = None) -> Signals:
+                            rr: float | None = None, fast_n: int | None = None,
+                            max_stretch: float | None = None,
+                            max_atr_rank: float | None = None) -> Signals:
     """
     Edge source: a 2-8 day mean reversion that only exists at the swing horizon.
     Signal is computed on the DAILY bar and *lagged by one completed day* (no
@@ -148,6 +150,20 @@ def build_signals_swing_mtf(df_exec: pd.DataFrame, df_daily: pd.DataFrame,
     bull = c > trend
     d_entry = (bull & (r < os_th)).astype(float)
     d_exit = (r > exit_th).astype(float)
+
+    # --- regime corrections (diagnosis-driven, NOT return-optimised) ---
+    if fast_n is not None:
+        # require a bull regime (fast MA > slow MA) -> drop the ~breakeven bear-regime dips
+        d_entry = d_entry * (sma(c, fast_n) > trend).astype(float)
+    if max_stretch is not None:
+        # cede very-stretched/frothy markets to the trend sleeve (MR edge is thin there)
+        a_d = atr(df_daily, atr_n)
+        d_entry = d_entry * (((c - trend) / a_d) < max_stretch).astype(float)
+    if max_atr_rank is not None:
+        # volatility circuit-breaker: do NOT buy dips while volatility is exploding
+        # (fast crashes -> dips keep dipping; this is what wrecked MR in 2020/2008)
+        atr_rank = (atr(df_daily, atr_n) / c).rolling(252, min_periods=60).rank(pct=True)
+        d_entry = d_entry * (atr_rank < max_atr_rank).astype(float)
 
     if vix is not None and vix_max is not None:
         # optional regime guard: skip dips while VIX (fear) is in a blow-off above vix_max
@@ -173,3 +189,44 @@ def build_signals_swing_mtf(df_exec: pd.DataFrame, df_daily: pd.DataFrame,
                    stop_dist=stop_dist, target_dist=target_dist,
                    exit_long=exit_long.fillna(False), exit_short=false,
                    max_hold=max_hold_bars)
+
+
+# --------------------------------------------------------------------------- #
+#  TREND-FOLLOWING sleeve (Donchian breakout, long+short) — the regime diversifier
+# --------------------------------------------------------------------------- #
+def build_signals_trend_daily(df: pd.DataFrame, entry_n: int = 50, exit_n: int = 20,
+                              trend_n: int = 200, stop_atr: float = 3.0, atr_n: int = 14,
+                              shorts: bool = True, longs: bool = True) -> Signals:
+    """
+    Classic dual-Donchian trend following on the DAILY bar, designed to profit in
+    exactly the regimes where mean-reversion is flat/negative:
+      - strong sustained up-trends (long breakouts), and
+      - high-volatility breakdowns / bear markets (short breakouts) -> "crisis alpha".
+
+    Rules:
+      long  : close > highest-high(entry_n) AND close > SMA(trend_n)
+      short : close < lowest-low(entry_n)  AND close < SMA(trend_n)
+      exit  : Donchian(exit_n) trailing channel (Turtle-style) OR ATR stop.
+    No fixed target -> let winners run (this is what pays for the whipsaws).
+    """
+    c = df["close"]
+    a = atr(df, atr_n)
+    trend = sma(c, trend_n)
+    hi_e = df["high"].rolling(entry_n, min_periods=entry_n).max().shift(1)
+    lo_e = df["low"].rolling(entry_n, min_periods=entry_n).min().shift(1)
+    hi_x = df["high"].rolling(exit_n, min_periods=exit_n).max().shift(1)
+    lo_x = df["low"].rolling(exit_n, min_periods=exit_n).min().shift(1)
+
+    long_entry = ((c > hi_e) & (c > trend)) if longs else pd.Series(False, index=df.index)
+    short_entry = ((c < lo_e) & (c < trend)) if shorts else pd.Series(False, index=df.index)
+
+    exit_long = c < lo_x        # trailing breakdown closes the long
+    exit_short = c > hi_x        # trailing breakout closes the short
+
+    stop_dist = stop_atr * a
+    target_dist = pd.Series(np.nan, index=df.index)
+
+    return Signals(long_entry=long_entry.fillna(False), short_entry=short_entry.fillna(False),
+                   stop_dist=stop_dist, target_dist=target_dist,
+                   exit_long=exit_long.fillna(False), exit_short=exit_short.fillna(False),
+                   max_hold=0)

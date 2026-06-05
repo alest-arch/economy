@@ -3,7 +3,9 @@
 Sistema cuantitativo para S&P 500 (SPX) y Nasdaq-100 (NQ) con foco en **robustez
 fuera de muestra y estabilidad entre periodos**, no en rentabilidad.
 
-👉 **Informe completo y veredicto honesto: [`ESTRATEGIA.md`](ESTRATEGIA.md)**
+👉 **Informes (leer en orden):**
+1. [`ESTRATEGIA.md`](ESTRATEGIA.md) — diseño y validación de la estrategia base (mean-reversion).
+2. [`FRAMEWORK.md`](FRAMEWORK.md) — **diagnóstico de fallos + corrección a sistema multi-sleeve robusto multi-régimen** (MR corregido + trend), con veredicto apto/no apto.
 
 ## TL;DR
 - Único edge real: **reversión a la media swing** (señal diaria RSI(2) sobre SMA200,
@@ -16,6 +18,20 @@ fuera de muestra y estabilidad entre periodos**, no en rentabilidad.
   PF 1.27 (7/12). Cartera OOS Sharpe 0.72, maxDD -3.1%.
 - **Recomendación:** no desplegar a tamaño pleno; overlay de bajo riesgo + reconfirmar
   edge en vivo. Mejoras estructurales en §9 del informe.
+
+### Evolución a framework multi-sleeve (FRAMEWORK.md)
+- **Diagnóstico:** el MR es dependiente de régimen — se degrada en tendencia fuerte y
+  **se rompe en crashes** (2020 PF 0.19/0.43).
+- **Corrección:** cortacircuitos de volatilidad en el MR + **sleeve de trend (Donchian
+  largo)** que rescata 2015–19 (PF 2.05) y se va a caja en crashes.
+- **Combinado (MR+Trend, SPX+NQ, cap 3):** **positivo en TODOS los periodos**
+  (2005-09, 2010-14, 2015-19, 2020), maxDD −6.5%, PF 1.65, ruina ~0%, **correlación
+  entre sleeves +0.03**.
+- **Hallazgo crítico:** el trend **falla walk-forward con re-optimización** (sobreajuste
+  con ~43 trades) → usar **parámetros fijos** (positivo 7-8/10-11 años).
+- **Veredicto:** **apto con condiciones** (overlay conservador + reconfirmar 2020-2025);
+  no apto como sistema de alto retorno ni para beneficio en crisis. Descartado el lado
+  corto/"crisis alpha" (sin edge en índices).
 
 ## Estructura
 ```

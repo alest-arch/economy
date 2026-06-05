@@ -1,0 +1,5 @@
+sleeve,instrument,oos_trades,oos_E_R,oos_PF,oos_winrate_%,pos_folds,n_folds
+MR,SPX,115,0.0608,1.6,67.0,8,12
+MR,NQ,108,0.0936,1.79,75.0,9,12
+TREND,SPX,31,-0.2433,0.59,25.8,3,12
+TREND,NQ,28,-0.3292,0.5,21.4,3,12
