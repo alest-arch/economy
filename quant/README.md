@@ -6,6 +6,7 @@ fuera de muestra y estabilidad entre periodos**, no en rentabilidad.
 👉 **Informes (leer en orden):**
 1. [`ESTRATEGIA.md`](ESTRATEGIA.md) — diseño y validación de la estrategia base (mean-reversion).
 2. [`FRAMEWORK.md`](FRAMEWORK.md) — **diagnóstico de fallos + corrección a sistema multi-sleeve robusto multi-régimen** (MR corregido + trend), con veredicto apto/no apto.
+3. [`OOS_2021_2026.md`](OOS_2021_2026.md) — **anexo fuera de muestra 2021–2026**: caracterización de régimen (VIX diario + S&P mensual hasta 2026) e inferencia de comportamiento por sleeve. Honesto sobre el límite: no hubo OHLC diario disponible para un backtest real.
 
 ## TL;DR
 - Único edge real: **reversión a la media swing** (señal diaria RSI(2) sobre SMA200,
