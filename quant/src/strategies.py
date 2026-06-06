@@ -195,30 +195,29 @@ def build_signals_swing_mtf(df_exec: pd.DataFrame, df_daily: pd.DataFrame,
 #  TREND-FOLLOWING sleeve (Donchian breakout, long+short) — the regime diversifier
 # --------------------------------------------------------------------------- #
 def build_signals_trend_daily(df: pd.DataFrame, entry_n: int = 50, exit_n: int = 20,
-                              trend_n: int = 200, stop_atr: float = 3.0, atr_n: int = 14,
+                              trend_n: int | None = 200, stop_atr: float = 3.0, atr_n: int = 14,
                               shorts: bool = True, longs: bool = True) -> Signals:
     """
-    Classic dual-Donchian trend following on the DAILY bar, designed to profit in
-    exactly the regimes where mean-reversion is flat/negative:
-      - strong sustained up-trends (long breakouts), and
-      - high-volatility breakdowns / bear markets (short breakouts) -> "crisis alpha".
-
-    Rules:
-      long  : close > highest-high(entry_n) AND close > SMA(trend_n)
-      short : close < lowest-low(entry_n)  AND close < SMA(trend_n)
-      exit  : Donchian(exit_n) trailing channel (Turtle-style) OR ATR stop.
-    No fixed target -> let winners run (this is what pays for the whipsaws).
+    Classic dual-Donchian trend following on the DAILY bar.
+    trend_n=None disables the SMA filter (pure breakout, both directions) -> used for
+    the diversified cross-asset portfolio. trend_n=200 -> only trade with the long MA.
     """
     c = df["close"]
     a = atr(df, atr_n)
-    trend = sma(c, trend_n)
     hi_e = df["high"].rolling(entry_n, min_periods=entry_n).max().shift(1)
     lo_e = df["low"].rolling(entry_n, min_periods=entry_n).min().shift(1)
     hi_x = df["high"].rolling(exit_n, min_periods=exit_n).max().shift(1)
     lo_x = df["low"].rolling(exit_n, min_periods=exit_n).min().shift(1)
+    if trend_n is None:
+        up_ok = pd.Series(True, index=df.index)
+        dn_ok = pd.Series(True, index=df.index)
+    else:
+        trend = sma(c, trend_n)
+        up_ok = c > trend
+        dn_ok = c < trend
 
-    long_entry = ((c > hi_e) & (c > trend)) if longs else pd.Series(False, index=df.index)
-    short_entry = ((c < lo_e) & (c < trend)) if shorts else pd.Series(False, index=df.index)
+    long_entry = ((c > hi_e) & up_ok) if longs else pd.Series(False, index=df.index)
+    short_entry = ((c < lo_e) & dn_ok) if shorts else pd.Series(False, index=df.index)
 
     exit_long = c < lo_x        # trailing breakdown closes the long
     exit_short = c > hi_x        # trailing breakout closes the short

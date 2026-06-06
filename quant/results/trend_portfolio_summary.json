@@ -1,0 +1,48 @@
+{
+  "instruments": 25,
+  "total_trades": 1732,
+  "max_concurrent": 27,
+  "uncapped_1pct": {
+    "cagr_%": 0.71,
+    "maxDD_%": -60.0,
+    "calmar": 0.01,
+    "sharpe": 0.12
+  },
+  "cap3_1pct": {
+    "cagr_%": 2.62,
+    "maxDD_%": -17.5
+  },
+  "risk_scaling": [
+    {
+      "risk_%": 0.5,
+      "cagr_%": 0.98,
+      "maxDD_%": -35.4,
+      "ruin20_%": 92.58
+    },
+    {
+      "risk_%": 1.0,
+      "cagr_%": 0.71,
+      "maxDD_%": -60.0,
+      "ruin20_%": 100.0
+    },
+    {
+      "risk_%": 1.5,
+      "cagr_%": -0.43,
+      "maxDD_%": -75.9,
+      "ruin20_%": 100.0
+    },
+    {
+      "risk_%": 2.0,
+      "cagr_%": -2.19,
+      "maxDD_%": -85.8,
+      "ruin20_%": 100.0
+    },
+    {
+      "risk_%": 3.0,
+      "cagr_%": -7.0,
+      "maxDD_%": -95.3,
+      "ruin20_%": 100.0
+    }
+  ],
+  "mc_ruin20_1pct_%": 100.0
+}
