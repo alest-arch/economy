@@ -1,0 +1,109 @@
+{
+  "portfolio": {
+    "name": "PORTFOLIO",
+    "CAGR_%": -0.09,
+    "vol_%": 12.7,
+    "Sharpe": 0.06,
+    "maxDD_%": -43.7,
+    "Calmar": -0.0
+  },
+  "sleeves": {
+    "TF": {
+      "name": "TF",
+      "CAGR_%": -0.8,
+      "vol_%": 12.4,
+      "Sharpe": -0.0,
+      "maxDD_%": -60.5,
+      "Calmar": -0.01
+    },
+    "MR": {
+      "name": "MR",
+      "CAGR_%": -6.37,
+      "vol_%": 35.0,
+      "Sharpe": 0.02,
+      "maxDD_%": -87.8,
+      "Calmar": -0.07
+    },
+    "BO": {
+      "name": "BO",
+      "CAGR_%": -0.99,
+      "vol_%": 13.7,
+      "Sharpe": -0.0,
+      "maxDD_%": -33.9,
+      "Calmar": -0.03
+    }
+  },
+  "sleeve_corr": {
+    "TF": {
+      "TF": 1.0,
+      "MR": 0.105,
+      "BO": 0.517
+    },
+    "MR": {
+      "TF": 0.105,
+      "MR": 1.0,
+      "BO": -0.348
+    },
+    "BO": {
+      "TF": 0.517,
+      "MR": -0.348,
+      "BO": 1.0
+    }
+  },
+  "per_regime": {
+    "GFC 2008-09": {
+      "ret_%": 21.9,
+      "maxDD_%": -8.4
+    },
+    "EuroCrisis 2011": {
+      "ret_%": -3.4,
+      "maxDD_%": -10.3
+    },
+    "Bull 2013-2017": {
+      "ret_%": -1.4,
+      "maxDD_%": -31.7
+    },
+    "Q4-2018": {
+      "ret_%": -1.4,
+      "maxDD_%": -9.3
+    },
+    "COVID 2020": {
+      "ret_%": 4.7,
+      "maxDD_%": -7.3
+    }
+  },
+  "is": {
+    "name": "IS 2005-2013",
+    "CAGR_%": 0.58,
+    "vol_%": 13.1,
+    "Sharpe": 0.11,
+    "maxDD_%": -37.0,
+    "Calmar": 0.02
+  },
+  "oos": {
+    "name": "OOS 2014-2020",
+    "CAGR_%": -1.07,
+    "vol_%": 12.1,
+    "Sharpe": -0.03,
+    "maxDD_%": -31.7,
+    "Calmar": -0.03
+  },
+  "monte_carlo": {
+    "maxDD_p50_%": -44.3,
+    "maxDD_p95_%": -68.6,
+    "maxDD_p99_%": -76.8,
+    "ruin_ge30dd_%": 88.14,
+    "final_p5": 0.42,
+    "final_p50": 0.98
+  },
+  "total_trades": 27671,
+  "config": {
+    "target_vol": 0.11,
+    "budgets": {
+      "TF": 0.5,
+      "MR": 0.25,
+      "BO": 0.25
+    },
+    "cost_bps_side": 2.0
+  }
+}
