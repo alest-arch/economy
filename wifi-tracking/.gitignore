@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+server/calibration.json
+firmware/esp32-csi-node/.pio/
+firmware/esp32-csi-node/sdkconfig*

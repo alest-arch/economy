@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WiFi Person Tracking</title>
+<style>
+  :root {
+    --bg: #0f1420; --card: #1a2233; --text: #e8ecf4; --muted: #8794ab;
+    --empty: #2a3348; --presence: #b98a1f; --motion: #c0392b; --offline: #3a4257;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; padding: 1.5rem; }
+  h1 { font-size: 1.3rem; margin-bottom: .25rem; }
+  .sub { color: var(--muted); font-size: .85rem; margin-bottom: 1.5rem; }
+  .floor { margin-bottom: 1.5rem; }
+  .floor h2 { font-size: 1rem; color: var(--muted); margin-bottom: .6rem; text-transform: uppercase; letter-spacing: .05em; }
+  .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .8rem; }
+  .room { background: var(--card); border-radius: 10px; padding: 1rem; border-left: 6px solid var(--empty); transition: border-color .3s, background .3s; }
+  .room.movimiento { border-left-color: var(--motion); background: #2a1a1e; }
+  .room.presencia { border-left-color: var(--presence); background: #26221a; }
+  .room.sin-datos { border-left-color: var(--offline); opacity: .5; }
+  .room .name { font-weight: 600; margin-bottom: .3rem; }
+  .room .state { font-size: .8rem; color: var(--muted); }
+  .room .z { font-size: .7rem; color: var(--muted); margin-top: .4rem; }
+  .badge { display: inline-block; padding: .1rem .5rem; border-radius: 99px; font-size: .72rem; font-weight: 600; }
+  .badge.movimiento { background: var(--motion); }
+  .badge.presencia { background: var(--presence); color: #111; }
+  .badge.vacio { background: var(--empty); color: var(--muted); }
+  .badge.sin-datos { background: var(--offline); color: var(--muted); }
+  footer { margin-top: 2rem; color: var(--muted); font-size: .75rem; }
+  #status { color: var(--muted); font-size: .8rem; }
+</style>
+</head>
+<body>
+  <h1>Seguimiento de presencia por WiFi</h1>
+  <p class="sub">Sensado CSI device-free — <span id="status">conectando…</span></p>
+  <div id="floors"></div>
+  <footer>Proyecto experimental sin ánimo de lucro. Solo para uso en tu propia casa con conocimiento de quienes viven en ella.</footer>
+
+<script>
+const STATE_LABEL = { movimiento: "Movimiento", presencia: "Presencia", vacio: "Vacío", "sin-datos": "Sin datos" };
+
+function render(data) {
+  const floorsEl = document.getElementById("floors");
+  const byFloor = {};
+  for (const [room, info] of Object.entries(data.rooms)) {
+    (byFloor[info.floor] ??= []).push([room, info]);
+  }
+  floorsEl.innerHTML = "";
+  for (const floor of Object.keys(byFloor).sort()) {
+    const section = document.createElement("div");
+    section.className = "floor";
+    section.innerHTML = `<h2>Planta ${floor}</h2>`;
+    const grid = document.createElement("div");
+    grid.className = "rooms";
+    for (const [room, info] of byFloor[floor].sort()) {
+      const div = document.createElement("div");
+      div.className = `room ${info.state}`;
+      div.innerHTML = `
+        <div class="name">${room}</div>
+        <div class="state"><span class="badge ${info.state}">${STATE_LABEL[info.state] ?? info.state}</span></div>
+        <div class="z">z=${info.zscore} · nodos: ${info.nodes.map(n => `#${n.node_id}`).join(", ")}</div>`;
+      grid.appendChild(div);
+    }
+    section.appendChild(grid);
+    floorsEl.appendChild(section);
+  }
+  const occupied = data.summary.occupied_rooms;
+  document.getElementById("status").textContent =
+    `${data.packets} paquetes CSI · ` +
+    (occupied.length ? `actividad en: ${occupied.join(", ")}` : "casa sin actividad detectada");
+}
+
+function connect() {
+  const ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onmessage = (ev) => render(JSON.parse(ev.data));
+  ws.onclose = () => {
+    document.getElementById("status").textContent = "desconectado, reintentando…";
+    setTimeout(connect, 2000);
+  };
+}
+connect();
+</script>
+</body>
+</html>

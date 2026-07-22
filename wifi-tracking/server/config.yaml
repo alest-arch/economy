@@ -1,0 +1,25 @@
+# Mapa de la casa: asigna cada nodo ESP32 (node_id del firmware) a una habitación.
+# Añade o quita habitaciones según tu casa real.
+
+listen:
+  host: 0.0.0.0
+  port: 5566
+
+dashboard:
+  host: 0.0.0.0
+  port: 8080
+
+nodes:
+  1: { room: salon, floor: 0 }
+  2: { room: cocina, floor: 0 }
+  3: { room: dormitorio-1, floor: 1 }
+  4: { room: dormitorio-2, floor: 1 }
+
+detection:
+  window_seconds: 2.0        # ventana deslizante para calcular movimiento
+  motion_z_threshold: 4.0    # z-score sobre la línea base para declarar MOVIMIENTO
+  presence_z_threshold: 2.0  # z-score intermedio: alguien quieto / actividad débil
+  hold_seconds: 5.0          # cuánto mantener el estado tras dejar de detectar
+  min_packets: 20            # mínimo de paquetes en ventana para evaluar
+
+calibration_file: calibration.json
