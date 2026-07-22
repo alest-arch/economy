@@ -29,7 +29,12 @@ WiFi, y esa distorsión se puede medir y clasificar.
    estable. Persona moviéndose → varianza alta.
 3. Con una **calibración** de la casa vacía se calcula el z-score y se
    clasifica cada habitación: `vacío` / `presencia` / `movimiento`.
-4. El **dashboard** muestra las plantas y habitaciones en tiempo real.
+4. El **dashboard** muestra las plantas y habitaciones en tiempo real (4
+   actualizaciones/s): en cada habitación ocupada aparece una **silueta
+   animada** cuyo ritmo de paso sigue la intensidad real de la señal, junto a
+   una gráfica en vivo del z-score. La silueta es un avatar de la detección,
+   no una reconstrucción del cuerpo (eso no es posible con hardware
+   doméstico; ver tabla de capacidades).
 
 ## Qué puede y qué NO puede hacer (honestidad ante todo)
 

@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WiFi Person Tracking</title>
+<link rel="icon" href="data:,">
 <style>
   :root {
     --bg: #0f1420; --card: #1a2233; --text: #e8ecf4; --muted: #8794ab;
-    --empty: #2a3348; --presence: #b98a1f; --motion: #c0392b; --offline: #3a4257;
+    --empty: #2a3348; --presence: #e0a92e; --motion: #e74c3c; --offline: #3a4257;
   }
   * { box-sizing: border-box; margin: 0; }
   body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; padding: 1.5rem; }
@@ -15,57 +16,171 @@
   .sub { color: var(--muted); font-size: .85rem; margin-bottom: 1.5rem; }
   .floor { margin-bottom: 1.5rem; }
   .floor h2 { font-size: 1rem; color: var(--muted); margin-bottom: .6rem; text-transform: uppercase; letter-spacing: .05em; }
-  .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .8rem; }
-  .room { background: var(--card); border-radius: 10px; padding: 1rem; border-left: 6px solid var(--empty); transition: border-color .3s, background .3s; }
+  .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .8rem; }
+  .room { background: var(--card); border-radius: 10px; padding: .9rem; border-left: 6px solid var(--empty); transition: border-color .3s, background .3s; }
   .room.movimiento { border-left-color: var(--motion); background: #2a1a1e; }
   .room.presencia { border-left-color: var(--presence); background: #26221a; }
   .room.sin-datos { border-left-color: var(--offline); opacity: .5; }
-  .room .name { font-weight: 600; margin-bottom: .3rem; }
-  .room .state { font-size: .8rem; color: var(--muted); }
-  .room .z { font-size: .7rem; color: var(--muted); margin-top: .4rem; }
+  .room .name { font-weight: 600; margin-bottom: .4rem; }
   .badge { display: inline-block; padding: .1rem .5rem; border-radius: 99px; font-size: .72rem; font-weight: 600; }
   .badge.movimiento { background: var(--motion); }
   .badge.presencia { background: var(--presence); color: #111; }
   .badge.vacio { background: var(--empty); color: var(--muted); }
   .badge.sin-datos { background: var(--offline); color: var(--muted); }
-  footer { margin-top: 2rem; color: var(--muted); font-size: .75rem; }
+  .z { font-size: .7rem; color: var(--muted); margin-top: .4rem; }
+  footer { margin-top: 2rem; color: var(--muted); font-size: .75rem; max-width: 60rem; }
   #status { color: var(--muted); font-size: .8rem; }
+
+  /* --- escenario con la silueta --- */
+  .stage { position: relative; height: 84px; margin: .4rem 0; border-radius: 6px;
+           background: linear-gradient(#141a29, #10151f);
+           border-bottom: 2px solid #232c42; overflow: hidden; }
+  .walker { position: absolute; bottom: 4px; left: 0; width: 40px; height: 72px;
+            opacity: 0; transition: opacity .4s; will-change: transform; }
+  .room.movimiento .walker, .room.presencia .walker { opacity: 1; }
+  .room.movimiento .walker { animation: roundtrip var(--pace, 6s) linear infinite; }
+  .figure { width: 100%; height: 100%; color: #d8dee9; }
+  .room.movimiento .figure { color: var(--motion); }
+  .room.presencia .figure { color: var(--presence); }
+  .room.presencia .walker { transform: translateX(80px); }
+  .room.presencia .torso-group { animation: breathe 3s ease-in-out infinite; transform-origin: 30px 55px; }
+
+  .limb { transform-box: fill-box; }
+  .room.movimiento .arm-l { transform-origin: top center; animation: swing var(--cycle, .5s) ease-in-out infinite alternate; }
+  .room.movimiento .arm-r { transform-origin: top center; animation: swing var(--cycle, .5s) ease-in-out infinite alternate-reverse; }
+  .room.movimiento .leg-l { transform-origin: top center; animation: swing var(--cycle, .5s) ease-in-out infinite alternate-reverse; }
+  .room.movimiento .leg-r { transform-origin: top center; animation: swing var(--cycle, .5s) ease-in-out infinite alternate; }
+
+  @keyframes swing { from { transform: rotate(26deg); } to { transform: rotate(-26deg); } }
+  @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03, 1.015); } }
+  @keyframes roundtrip {
+    0%    { transform: translateX(0)     scaleX(1); }
+    49.9% { transform: translateX(140px) scaleX(1); }
+    50%   { transform: translateX(140px) scaleX(-1); }
+    99.9% { transform: translateX(0)     scaleX(-1); }
+    100%  { transform: translateX(0)     scaleX(1); }
+  }
+
+  .spark { width: 100%; height: 34px; display: block; margin-top: .2rem; }
 </style>
 </head>
 <body>
   <h1>Seguimiento de presencia por WiFi</h1>
   <p class="sub">Sensado CSI device-free — <span id="status">conectando…</span></p>
   <div id="floors"></div>
-  <footer>Proyecto experimental sin ánimo de lucro. Solo para uso en tu propia casa con conocimiento de quienes viven en ella.</footer>
+  <footer>
+    La silueta es un <strong>avatar</strong> que representa la detección de movimiento en esa
+    habitación (su ritmo sigue la intensidad real de la señal); no es una imagen del cuerpo —
+    reconstruir siluetas reales por WiFi requiere hardware de investigación.
+    Proyecto experimental sin ánimo de lucro; úsalo solo en tu casa y con conocimiento de quienes viven en ella.
+  </footer>
 
 <script>
 const STATE_LABEL = { movimiento: "Movimiento", presencia: "Presencia", vacio: "Vacío", "sin-datos": "Sin datos" };
+const HISTORY = 120;
 
-function render(data) {
+const FIGURE_SVG = `
+<svg class="figure" viewBox="0 0 60 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+  <g class="torso-group">
+    <circle cx="30" cy="11" r="8.5"/>
+    <path d="M23 22 Q30 18 37 22 L38.5 55 Q30 59 21.5 55 Z"/>
+  </g>
+  <g class="limb arm-l"><rect x="20" y="24" width="5.5" height="27" rx="2.7"/></g>
+  <g class="limb arm-r"><rect x="34.5" y="24" width="5.5" height="27" rx="2.7"/></g>
+  <g class="limb leg-l"><rect x="23" y="55" width="6.5" height="40" rx="3"/></g>
+  <g class="limb leg-r"><rect x="30.5" y="55" width="6.5" height="40" rx="3"/></g>
+</svg>`;
+
+const cards = new Map();   // room -> {el, badge, z, canvas, history: []}
+let thresholds = { presence: 2, motion: 4 };
+
+function buildCard(room, info) {
+  const div = document.createElement("div");
+  div.className = "room";
+  div.innerHTML = `
+    <div class="name">${room}</div>
+    <div class="stage"><div class="walker">${FIGURE_SVG}</div></div>
+    <canvas class="spark" width="220" height="34"></canvas>
+    <span class="badge"></span>
+    <div class="z"></div>`;
+  return {
+    el: div,
+    badge: div.querySelector(".badge"),
+    zEl: div.querySelector(".z"),
+    walker: div.querySelector(".walker"),
+    canvas: div.querySelector(".spark"),
+    history: [],
+  };
+}
+
+function drawSpark(card) {
+  const ctx = card.canvas.getContext("2d");
+  const { width: W, height: H } = card.canvas;
+  ctx.clearRect(0, 0, W, H);
+  const zMax = Math.max(thresholds.motion * 1.5, ...card.history, 1);
+  const zMin = Math.min(0, ...card.history);
+  const y = (z) => H - 2 - ((z - zMin) / (zMax - zMin)) * (H - 4);
+
+  ctx.strokeStyle = "#3a4257"; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+  for (const t of [thresholds.presence, thresholds.motion]) {
+    ctx.beginPath(); ctx.moveTo(0, y(t)); ctx.lineTo(W, y(t)); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.strokeStyle = "#6fa8dc"; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  card.history.forEach((z, i) => {
+    const x = (i / (HISTORY - 1)) * W;
+    i === 0 ? ctx.moveTo(x, y(z)) : ctx.lineTo(x, y(z));
+  });
+  ctx.stroke();
+}
+
+function update(data) {
+  if (data.thresholds) thresholds = data.thresholds;
   const floorsEl = document.getElementById("floors");
+
   const byFloor = {};
-  for (const [room, info] of Object.entries(data.rooms)) {
-    (byFloor[info.floor] ??= []).push([room, info]);
-  }
-  floorsEl.innerHTML = "";
-  for (const floor of Object.keys(byFloor).sort()) {
-    const section = document.createElement("div");
-    section.className = "floor";
-    section.innerHTML = `<h2>Planta ${floor}</h2>`;
-    const grid = document.createElement("div");
-    grid.className = "rooms";
-    for (const [room, info] of byFloor[floor].sort()) {
-      const div = document.createElement("div");
-      div.className = `room ${info.state}`;
-      div.innerHTML = `
-        <div class="name">${room}</div>
-        <div class="state"><span class="badge ${info.state}">${STATE_LABEL[info.state] ?? info.state}</span></div>
-        <div class="z">z=${info.zscore} · nodos: ${info.nodes.map(n => `#${n.node_id}`).join(", ")}</div>`;
-      grid.appendChild(div);
+  for (const [room, info] of Object.entries(data.rooms)) (byFloor[info.floor] ??= []).push(room);
+
+  // Construccion inicial (una sola vez, para no reiniciar animaciones CSS)
+  if (!cards.size) {
+    for (const floor of Object.keys(byFloor).sort()) {
+      const section = document.createElement("div");
+      section.className = "floor";
+      section.innerHTML = `<h2>Planta ${floor}</h2>`;
+      const grid = document.createElement("div");
+      grid.className = "rooms";
+      for (const room of byFloor[floor].sort()) {
+        const card = buildCard(room);
+        cards.set(room, card);
+        grid.appendChild(card.el);
+      }
+      section.appendChild(grid);
+      floorsEl.appendChild(section);
     }
-    section.appendChild(grid);
-    floorsEl.appendChild(section);
   }
+
+  for (const [room, info] of Object.entries(data.rooms)) {
+    const card = cards.get(room);
+    if (!card) continue;
+    if (card.el.dataset.state !== info.state) {
+      card.el.dataset.state = info.state;
+      card.el.className = `room ${info.state}`;
+      card.badge.className = `badge ${info.state}`;
+      card.badge.textContent = STATE_LABEL[info.state] ?? info.state;
+    }
+    card.zEl.textContent = `z=${info.zscore} · nodos: ${info.nodes.map(n => "#" + n.node_id).join(", ")}`;
+
+    // Ritmo de la silueta ligado a la intensidad real de la senal
+    const intensity = Math.min(Math.max(info.zscore / (thresholds.motion * 3), 0), 1);
+    card.walker.parentElement.parentElement.style.setProperty("--cycle", (0.65 - 0.4 * intensity).toFixed(2) + "s");
+    card.walker.parentElement.parentElement.style.setProperty("--pace", (8 - 5 * intensity).toFixed(2) + "s");
+
+    card.history.push(info.zscore);
+    if (card.history.length > HISTORY) card.history.shift();
+    drawSpark(card);
+  }
+
   const occupied = data.summary.occupied_rooms;
   document.getElementById("status").textContent =
     `${data.packets} paquetes CSI · ` +
@@ -74,7 +189,7 @@ function render(data) {
 
 function connect() {
   const ws = new WebSocket(`ws://${location.host}/ws`);
-  ws.onmessage = (ev) => render(JSON.parse(ev.data));
+  ws.onmessage = (ev) => update(JSON.parse(ev.data));
   ws.onclose = () => {
     document.getElementById("status").textContent = "desconectado, reintentando…";
     setTimeout(connect, 2000);

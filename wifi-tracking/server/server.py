@@ -56,6 +56,10 @@ class Engine:
             "packets": self.packet_count,
             "rooms": rooms,
             "summary": self.localizer.summary(rooms),
+            "thresholds": {
+                "presence": self.detector.presence_z,
+                "motion": self.detector.motion_z,
+            },
         }
 
 
@@ -86,7 +90,7 @@ def build_app(engine: Engine) -> FastAPI:
         try:
             while True:
                 await websocket.send_text(json.dumps(engine.snapshot()))
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.25)
         except WebSocketDisconnect:
             pass
         finally:
